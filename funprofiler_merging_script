@@ -1,0 +1,48 @@
+# load libraries
+library(dplyr)
+library(readr)
+library(tidyr)
+library(stringr)
+library(purrr)
+
+#load csv tables
+a<-read.csv("ko_BY1_220614_2030.csv")
+b<-read.csv("ko_BY1_220614_C125.csv")
+c<-read.csv("ko_BY1_220614_Fe125.csv")
+d<-read.csv("ko_BY1_220614_SL11125.csv")
+e<-read.csv("ko_BY3A_220614_20.csv")
+f<-read.csv("ko_BY3A_220614_C125.csv")
+g<-read.csv("ko_BY3A_220614_Fe125.csv")
+h<-read.csv("ko_BY3A_220614_SL11125.csv")
+
+data_list <- list(
+  BY1_2030     = a,
+  BY1_C125     = b,
+  BY1_Fe125    = c,
+  BY1_SL11125  = d,
+  BY3A_20      = e,
+  BY3A_C125    = f,
+  BY3A_Fe125   = g,
+  BY3A_SL11125 = h
+)
+
+
+results_list <- map2(
+  .x = data_list,
+  .y = names(data_list),
+  .f = function(df, sample_name) {
+    df %>%
+      mutate(ko_id = str_replace(ko_id, "ko:", "")) %>%
+      select(ko_id, abundance) %>%
+      rename(!!sample_name := abundance)
+  }
+)
+
+
+final_df <- reduce(results_list, full_join, by = "ko_id") %>%
+  replace(is.na(.), 0)
+
+# visualize
+print(head(final_df))
+
+ write.csv(final_df, "ko_abundance_merged.csv", row.names = FALSE)
